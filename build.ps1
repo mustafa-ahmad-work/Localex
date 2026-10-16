@@ -1,6 +1,7 @@
 # Automated Build Script for Offline Windows Translator
 param (
-    [switch]$CreateZip = $true
+    [switch]$CreateZip = $true,
+    [string]$Version = "v1.0.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -50,7 +51,8 @@ if (Test-Path $distFolder) {
     Write-Host "[OK] Standalone folder built at: $distFolder ($sizeMB MB)" -ForegroundColor Green
 
     if ($CreateZip) {
-        $zipPath = "dist\Localex_Portable_v1.0.0.zip"
+        $zipName = if ($Version) { "Localex_Portable_$Version.zip" } else { "Localex_Portable.zip" }
+        $zipPath = "dist\$zipName"
         if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
         Write-Host "[5/5] Compressing portable zip package..." -ForegroundColor Yellow
         Compress-Archive -Path "$distFolder\*" -DestinationPath $zipPath

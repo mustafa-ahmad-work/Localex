@@ -1,0 +1,84 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+      release_title:
+        description: 'Release Title'
+        required: false
+        default: 'Localex Release'
+      draft:
+        description: 'Create as Draft Release'
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as Pre-release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Determine Release Tag
+        id: vars
+        shell: pwsh
+        run: |
+          if ('${{ github.ref_type }}' -eq 'tag') {
+            $tag = '${{ github.ref_name }}'
+          } elseif ('${{ inputs.tag_name }}' -ne '') {
+            $tag = '${{ inputs.tag_name }}'
+          } else {
+            $tag = 'v1.0.0'
+          }
+          Write-Output "RELEASE_TAG=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Target Release Tag: $tag"
+
+      - name: Build with PyInstaller
+        shell: pwsh
+        run: |
+          ./build.ps1 -Version "${{ steps.vars.outputs.RELEASE_TAG }}" -CreateZip
+
+      - name: Upload Build Artifact to GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: Localex-Portable-${{ steps.vars.outputs.RELEASE_TAG }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.RELEASE_TAG }}
+          name: ${{ inputs.release_title || steps.vars.outputs.RELEASE_TAG }}
+          draft: ${{ inputs.draft || false }}
+          prerelease: ${{ inputs.prerelease || false }}
+          files: dist/*.zip
+          generate_release_notes: true
