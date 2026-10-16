@@ -1,0 +1,33 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Build & Distribution
+build/
+dist/
+*.spec.bak
+*.egg-info/
+
+# Local Data, Models & Logs
+data/*.db
+data/*.json
+data/*.tmp
+models/*
+!models/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Temporary & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+*.part
+*.tmp
